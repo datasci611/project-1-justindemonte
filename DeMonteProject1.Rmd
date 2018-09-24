@@ -1,0 +1,237 @@
+---
+  title: "BIOS 611 Project 1"
+  author: "Justin DeMonte"
+  date: "`r format(Sys.time(), '%m/%d/%Y')`"
+  output: html_document
+---
+
+
+```{r, include=FALSE}
+library(tidyverse)
+```
+
+#1)
+```{r, echo=FALSE}
+library(tidyverse)
+data("Seatbelts")
+
+Belts <-as.tibble(Seatbelts)
+Belts$names <- names(Seatbelts)
+
+Belts %>%
+  
+  # The data set is a time series.  
+  # Each row represents a month beginning Jan 1969.
+  # Creates variables for Month and 2-digit year:
+  mutate(Mnth=(row_number()-1)%%12, Yr=((row_number()-1)%/%12)+69)  %>%
+  
+  # Creates variable for total number of drivers and passengers
+  # killed or seriously injured
+  mutate(KilledInjured = (drivers+front+rear)) %>% 
+  
+  # Creates the graph
+  ggplot(aes(x=Yr, y=as.factor(desc(Mnth)), fill=KilledInjured)) +
+  geom_tile(color="grey") +
+  geom_vline(aes(xintercept = 82.5),size=1, color='green') +
+  annotate("text", 
+           x = 82.075, 
+           y= 11, 
+           label='Seatbelt  law  enacted', 
+           size=3,
+           color='white'
+           ) +
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank()
+  ) +
+  labs(title="Automobile Drivers and Passengers Killed or Seriously Injured",
+       subtitle="in Great Britain, 1969-1984", 
+       x="Year, 19-", 
+       y="",                 
+       fill="Number\nKilled or\nSeriously\nInjured"
+       ) +
+  scale_x_continuous(breaks=c(69:84)) +
+  scale_y_discrete(labels=c(
+    "Dec", "Nov", "Oct", 
+    "Sep", "Aug", "Jul", 
+    "Jun", "May", "Apr", 
+    "Mar", "Feb", "Jan")) +
+  scale_fill_viridis_c(option="inferno") 
+```
+
+```{r, echo=FALSE, include=FALSE}
+# law variable is 0 when the seatbelt law was not in effect
+# Law was not in effect for years before 1983
+Belts %>%
+  mutate(Mnth=(row_number()-1)%%12, Yr=((row_number()-1)%/%12)+69) %>%
+  filter(Yr<83) %>%
+  group_by(law) %>%
+  count()
+```
+
+```{r, echo=FALSE, include=FALSE}
+# law variable is 1 when the seatbelt law was in effect
+# law variable in effect for all but 1 month beginning in 1983
+Belts %>%
+  mutate(Mnth=(row_number()-1)%%12, Yr=((row_number()-1)%/%12)+69) %>%
+  filter(Yr>=83) %>%
+  group_by(law) %>%
+  count()
+```
+
+```{r, echo=FALSE, include=FALSE}
+# Shows that law went into effect in February, 1983 
+# (months are coded 0, 1, 2, ..., 11)
+Belts %>%
+  mutate(Mnth=(row_number()-1)%%12, Yr=((row_number()-1)%/%12)+69) %>%
+  filter(Yr>=83) %>%
+  select(Mnth,Yr, law)
+
+```
+
+This graphic was created from the "seatbelts" dataset in R.  This data set describes the monthly number of drivers and passengers killed or seriously injured in automobile accidents in Great Britain between January 1969 and December 1984, inclusive.
+
+I was interested in exploring potential trends in automobile injuries/deaths by season, as well as potential trends across decades.
+
+The graphic suggests a seasonal pattern - deaths and serious injuries for each year tended to be higher in December (and to a lesser extent, November).  The graphic also illustrates a steady decline in automobile deaths and serious injuries overall between 1969 and 1982.  There is a marked drop in deaths and serious injuries beginning in February 1983, when a new seatbelt law was put into effect.  
+
+Seasonal trends may be related to poor winter driving conditions.  Weather data, and more detailed accident data could be used to explore the validity of this explanation.  The seatbelt law appears to have been effective in reducing deaths and injuries.
+
+Reference: Harvey, A. C. and Durbin, J. (1986). The effects of seat belt legislation on British road casualties: A case study in structural time series modelling. Journal of the Royal Statistical Society series A, 149, 187-227. doi: 10.2307/2981553.
+
+#2)
+```{r, echo=FALSE}
+library(tidyverse)
+data("msleep")
+
+as.tibble(msleep) %>%
+  
+  # Remove cases with missing values for -vore
+  filter(!is.na(vore)) %>%
+  
+  # Create the graph.
+  ggplot(aes(x=reorder(vore, sleep_total, FUN=median), y=sleep_total)) +
+  geom_boxplot(aes(fill=vore)) +
+  coord_flip() +
+  labs(title="Mammal Sleep Times by Diet",
+       x='-vore', 
+       y='Hours of Sleep per Night'
+       ) +
+  theme(legend.position ="none") 
+```
+
+```{r, echo=FALSE}
+# Number of observations per category
+counts <- msleep %>%
+  filter(!is.na(vore)) %>%
+  group_by(vore) %>%
+  count()
+```
+The graph is based on the "msleep" data set in R, which comes from a study on mammalian sleep paterns.  Measurements (e.g. nightly sleep times) were taken by V.M. Savage and G.B. West, and diet categories (herbivore, carnivore, etc.) were added from wikipedia.  Cases with missing values for diet were removed from the dataset when the graph was created.  
+
+I was interested in exploring a potential relationship between mammals' diets and nightly sleep times.  The graph shows the distributions of mammals' nightly sleep times, by diet category.  Median nightly sleep times were consistent across diet categories (roughly 10 hours/night), with the exception of insectivore.  However, it should be noted that there were only `r counts$n[3]` observations for insectivores in the data set (there were `r counts$n[1]`, `r counts$n[2]`, `r counts$n[4]` observations for carni, herbi, and omni -vores respectively).
+
+In short, this graphical exploration did not illuminate a clear relationship between diet and sleep times.  More data and additional analyses would be helpful in further exploring this hypothesis. 
+
+Reference: V. M. Savage and G. B. West. A quantitative, theoretical framework for understanding mammalian sleep. Proceedings of the National Academy of Sciences, 104 (3):1051-1056, 2007.
+#3)
+```{r, echo=FALSE}
+library(tidyverse)
+data("InsectSprays")
+Sprays <- as.tibble(InsectSprays) 
+
+Sprays %>%
+  
+  # There are two insect counts per location, for each spray.
+  # The first two values in the count column correspond to Spray 1, location 1.
+  # The next two count values correspond to Spray 1, area 2 and so on.
+  # (these details are documented in Beall, 1942, i.e. the data source)
+  
+  # The mutate function creates a variable for crop location
+  # (with locations numbered 1 through 6).
+  mutate(Location=((row_number()-1)%/%2)%%6 +1) %>% 
+
+  # Takes the average of two insect counts for each spray, for each location
+  group_by(spray, Location) %>%
+  summarize(AvgOf2=mean(count)) %>%
+  
+  # creates the graph
+  ggplot(aes(x=Location, y=AvgOf2, color=spray)) +
+  geom_line(stat='identity') +
+  geom_point(size=.75) +
+  labs(
+    title='Performance of Insect Sprays at Six Crop Locations',
+    subtitle='Average Number of Insects Remaining After Applying Spray, by Location',
+    y='Average Number of Insects'
+  ) +
+  scale_x_continuous(breaks=c(1:6)) 
+# Calculates the total nuumber of insects across all locations for each spray.
+```
+
+```{r, echo=FALSE, include=FALSE}
+InsectCounts <- Sprays %>%
+  group_by(spray) %>%
+  summarise(TotalInsects=sum(count))
+```
+
+This figure is derived from the "InsectSprays" data set in R, which comes from a 1942 experiment by Beall.  Beall applied six different insect sprays to crops across six locations in Chatham, Ontario.  
+
+
+Each spray was tested twice at each location (on two different crop plots within the location).  For each test, the number of insects left in the crop plot after spraying was recorded.  Points on the graph represent the average of two insect counts for each spray at each location (note that lower insect counts indicate a more effective spray).
+
+
+The goal of this graphical exploration was to explore the performance of the sprays and to assess possible differences in spray performances by location. 
+
+
+While there is some variation in the overall number of insects by location, the relative performance of the sprays was roughly consistent across locations.  Spray C had the best performance overall, with a sum total (over all locations) of only `r InsectCounts$TotalInsects[3]` insects remaining after treatment.  Spray F had the worst performance overall, with a sum (over all locations)  of `r InsectCounts$TotalInsects[6]` insects remaining after treatment.  The big takeaway is the separation of the sprays into two distinct groups: Sprays C, D, and E were generally more effective than sprays A, B, and F. 
+
+Reference:  Beall, G., (1942) The Transformation of data from entomological field experiments,Biometrika, 29, 243-262.
+
+#4)
+```{r, echo=FALSE}
+library(tidyverse)
+tb <-as.tibble(UKgas)
+tb$names <- names(UKgas)
+
+# Vectors used to create x-axis tick labels
+YrLab <- seq(61, 85, by=2)
+YrLab4 <- rep(YrLab,4)
+YrQtr1 <- paste(YrLab, "Q1")
+YrQtr2 <- paste(YrLab, "Q2")
+YrQtr3 <- paste(YrLab, "Q3")
+YrQtr4 <- paste(YrLab, "Q4")
+YrQtrLab <- c(YrQtr1, YrQtr2, YrQtr3, YrQtr4)
+
+tb %>%
+  
+  # The data is organized as a quarterly time series
+  # Create variables for quarter and year
+  mutate(Qtr=((row_number()-1)%%4)+1, Yr=((row_number()-1)%/%4)+60) %>%
+  
+  # Create a variable for Year/Quarter combination
+  mutate(YrQtr = paste(Yr, Qtr, sep = " Q")) %>%
+  
+  # Create the graph
+  ggplot(aes(x=reorder(YrQtr,Qtr),y=x, fill=as.factor(Qtr))) +
+  geom_bar(stat = 'identity') +
+  coord_polar() +
+  
+  # Use vectors created above to label the "x" axis.
+  scale_x_discrete(breaks=YrQtrLab, labels=YrLab4) +
+  scale_fill_discrete(name="Quarter") +
+  labs(title="Quarterly Gas Consuption in the UK",
+       y='Gas consumption, in millions of therms',
+       x='Year, 19-',
+       subtitle="1960 to 1986, by Quarter")
+```
+
+This graph is based on the R data set "UKgas".  This data set describes quarterly gas consumption in the UK, measured in millions of therms, for the years 1960 through 1986, inclusive.  
+
+I aimed to explore seasonal trends in gas usage, as well as trends over the decades.  
+
+The graph shows a clear trend in gas consumption by quarter.  The most gas is consumed during quarter 1, followed by quarters 4, 2, and 3, in that order. This trend is most likely driven by winter weather.  
+
+The graph shows also shows a steady increase in gas consumption between 1960 and 1986. While overall consumption incresed, the quarterly trend described above held over time.
+
+Refererence: Durbin, J. and Koopman, S. J. (2001) Time Series Analysis by State Space Methods. Oxford University Press. http://www.ssfpack.com/dkbook/
